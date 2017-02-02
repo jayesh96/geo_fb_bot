@@ -8,12 +8,57 @@ from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
+from clarifai.rest import ClarifaiApp
+
 #  ------------------------ Fill this with your page access token! -------------------------------
 PAGE_ACCESS_TOKEN = "EAADKGhPh2u0BACAJ6hCHArGbnukjVNQdZAVOmZC1aNuxCtqzuFlM1Shzjn95VdvEkIHvEwaY1OcipuOxKbDRxZBgfczBH7pDVgLy6vFcJGr5322M4dMGrHoVP0PgWGBSfLVcIkZCk8XigZBt2ZAUvBl69ZAtTBfl0q5D1QPoNlbRgZDZD"
 VERIFY_TOKEN = "2318934571"
 
 
+flowers = ['rose', 'sunflower', 'cauliflower', 'lotus']
 # Helper function
+
+def post_facebook_message_continue_chatting(fbid):
+    # Remove all punctuations, lower case the text and split it based on space
+    
+
+    user_details_url = "https://graph.facebook.com/v2.6/%s"%fbid 
+    user_details_params = {'fields':'first_name,last_name,profile_pic', 'access_token':PAGE_ACCESS_TOKEN} 
+    user_details = requests.get(user_details_url, user_details_params).json() 
+                   
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=%s'%PAGE_ACCESS_TOKEN
+    response_msg = json.dumps(
+    				{
+    					"recipient":
+    						{
+    							"id":fbid
+    						}, 
+    					"message":{
+    "attachment":{
+      "type":"template",
+      "payload":{
+        "template_type":"button",
+        "text":"What do you want to do next?",
+        "buttons":[
+          {
+            "type":"web_url",
+            "url":"http://mashglobal.org/",
+            "title":"Show Website"
+          },
+          {
+            "type":"postback",
+            "title":"Post a Picture",
+            "payload":"USER_DEFINED_PAYLOAD"
+          }
+        ]
+      }
+    }
+  }
+    						})
+    status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
+    pprint(status.json())
+
+
 def post_facebook_message(fbid, latitude, longitude):
     # Remove all punctuations, lower case the text and split it based on space
     string = str(latitude) + " , " + str(longitude)
@@ -37,6 +82,116 @@ def post_facebook_message(fbid, latitude, longitude):
     						})
     status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
     pprint(status.json())
+
+
+def post_facebook_message_text(fbid, text):
+    # Remove all punctuations, lower case the text and split it based on space
+    string = "Click Here On any Option"
+    user_details_url = "https://graph.facebook.com/v2.6/%s"%fbid 
+    user_details_params = {'fields':'first_name,last_name,profile_pic', 'access_token':PAGE_ACCESS_TOKEN} 
+    user_details = requests.get(user_details_url, user_details_params).json() 
+                   
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=%s'%PAGE_ACCESS_TOKEN
+    response_msg = json.dumps(
+    				{
+    					"recipient":
+    						{
+    							"id":fbid
+    						}, 
+    					"message":
+    						{
+    							"text":string,
+    							"quick_replies":[
+     							 {
+        						"content_type":"text",
+      							  "title":"About",
+     						   "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_RED"
+      							},
+      						{
+      							  "content_type":"text",
+      								  "title":"Help",
+      							  "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_GREEN"
+ 								     },
+ 								{
+
+      							  "content_type":"text",
+      								  "title":"Continue Chatting",
+      							  "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_GREEN"
+ 								     }
+
+   						 ]
+    						}
+    						})
+    status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
+    pprint(status.json())    
+
+def post_facebook_message_text_about(fbid, about_command):
+    # Remove all punctuations, lower case the text and split it based on space
+    string = "This Bot is used to get images from the user and then used to analyze and study about the flower and plants.This is a great tool for students to learn and for kids to explore new flowers and plants"
+
+    user_details_url = "https://graph.facebook.com/v2.6/%s"%fbid 
+    user_details_params = {'fields':'first_name,last_name,profile_pic', 'access_token':PAGE_ACCESS_TOKEN} 
+    user_details = requests.get(user_details_url, user_details_params).json() 
+                   
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=%s'%PAGE_ACCESS_TOKEN
+    response_msg = json.dumps(
+    				{
+    					"recipient":
+    						{
+    							"id":fbid
+    						}, 
+    					"message":
+    						{
+    							"text":string
+    						}
+    						})
+    status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
+    pprint(status.json())
+
+
+######################  HANDLING IMAGES ###############################
+def post_facebook_message_image(fbid, image_url):
+    # Remove all punctuations, lower case the text and split it based on space
+    a = []
+
+    app = ClarifaiApp("7IytkvcgtC3tBdxY2cjR-jF9kJD1rDlZYh5o5tcq", "xMlF4W-tepNUh4jHf7oouTSgqCvsphugB3iveNRG")
+    model = app.models.get("general-v1.3")
+    str = model.predict_by_url(url=image_url)
+    print("$$$$$$$$$$$$$$$")
+    str = str['outputs']
+    for i in str:
+    	outputs = i['data']['concepts']
+
+    for output in outputs:
+    	val = output['name']
+    	a.append(val)
+
+    print(a)
+    print("$$$$$$$$$$$$$")
+
+
+    user_details_url = "https://graph.facebook.com/v2.6/%s"%fbid 
+    user_details_params = {'fields':'first_name,last_name,profile_pic', 'access_token':PAGE_ACCESS_TOKEN} 
+    user_details = requests.get(user_details_url, user_details_params).json() 
+                   
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=%s'%PAGE_ACCESS_TOKEN
+    response_msg = json.dumps(
+    				{
+    					"recipient":
+    						{
+    							"id":fbid
+    						}, 
+    					"message":
+    						{
+    							"text":image_url
+    						}
+    						})
+    status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
+    pprint(status.json())
+
+######################  HANDLING IMAGES ###############################
+
+
 
 # Create your views here.
 class YoMamaBotView(generic.View):
@@ -68,8 +223,11 @@ class YoMamaBotView(generic.View):
                     # are sent as attachments and must be handled accordingly.
                     if 'attachments' in message['message']:
                     	str =  message['message']['attachments']
-                    	print ("$$$$$$$$$$$$$$$$$$$$")
                     	for json_i in str:
+                    		print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                    		print(json_i)
+                    		print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                    		
                     		content_type = json_i['type']
                     		if content_type == 'location':
                     			message_coordinates = json_i['payload']['coordinates']
@@ -78,9 +236,20 @@ class YoMamaBotView(generic.View):
                     			print (latitude, longitude)
                     			post_facebook_message(message['sender']['id'], latitude, longitude)
                     		if content_type == 'image':
-                    			print("Image collected")
+                    			image_url = json_i['payload']['url']
+                    			post_facebook_message_image(message['sender']['id'], image_url)
+
                     else:
-                    	print(message['message']['text'])
+                    	help_command = (message['message']['text'])
+                    	if help_command == "Get Started":
+                    		post_facebook_message_text(message['sender']['id'], help_command)
+                    	elif help_command == "About":
+                    		post_facebook_message_text_about(message['sender']['id'], help_command)
+                    	elif(help_command == "Continue Chatting"):
+                    		post_facebook_message_continue_chatting(message['sender']['id'])
+                    	else:
+                    		pass
+
 
         return HttpResponse()    
 
